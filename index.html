@@ -64,10 +64,10 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-从SPI机制到JDBC后门实现/从SPI机制到JDBC后门实现" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-abc" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2023/05/31/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/" class="article-date">
-  <time datetime="2023-05-31T11:12:03.000Z" itemprop="datePublished">2023-05-31</time>
+    <a href="/2023/10/09/abc/" class="article-date">
+  <time datetime="2023-10-09T13:17:58.000Z" itemprop="datePublished">2023-10-09</time>
 </a>
     
   </div>
@@ -78,7 +78,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2023/05/31/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/">从SPI机制到JDBC后门实现</a>
+      <a class="article-title" href="/2023/10/09/abc/">abc</a>
     </h1>
   
 
@@ -86,83 +86,12 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="从SPI机制到JDBC后门实现"><a href="#从SPI机制到JDBC后门实现" class="headerlink" title="从SPI机制到JDBC后门实现"></a>从SPI机制到JDBC后门实现</h1><h1 id="1-前置知识"><a href="#1-前置知识" class="headerlink" title="1. 前置知识"></a>1. 前置知识</h1><h2 id="1-1-Spi机制"><a href="#1-1-Spi机制" class="headerlink" title="1.1 Spi机制"></a>1.1 Spi机制</h2><pre><code>Spi机制（Service Provider Interface）服务发现机制，该技术基于classLoader来发现并加载服务。目的是为了将服务接口与服务实现分离以达到解耦，提高服务的扩展性。这个机制简单来说：你只制定接口，不提供实现，接口实现由其他系统应用实现。
-</code></pre>
-<p>一个标准的Spi应该具有以下3部分组成：</p>
-<ol>
-<li>Service：一个公开的接口或抽象类，定义一个抽象的功能模块</li>
-<li>Service Provider：Service接口的某个实现类</li>
-<li>ServiceLoader：Spi机制的核心组件，负责在运行时发现并加载Service Provider</li>
-</ol>
-<p><img src="assets/image-20230601001000-gg06ec5.png" alt="image"></p>
-<pre><code>在IDEA编译器中其实使用了很多Spi机制，例如插件就是通过Spi机制实现的。IDEA只提供一个扩展接口，具体由插件开发者自由实现，而IDEA提供了Spi服务发现机制寻找具体插件的实现并对其进行加载，这样就达到了安装插件。在这个情况下，若我们想要安装或卸载某个插件，均不会影响其他代码，实现了可插拔的效果，提高了程序扩展性。
-
-当服务的提供者，提供了服务接口的一种实现之后，在jar包的META-INF/services/目录里同时创建一个以服务接口命名的文件。该文件里就是实现该服务接口的具体实现类。而当外部程序装配这个模块的时候，就能通过该jar包META-INF/services/里的配置文件找到具体的实现类名，并装载实例化，完成模块的注入。通过这个约定，就不需要把服务放在代码中了，通过模块被装配的时候就可以发现服务类了。具体Spi使用可参考：https://www.jb51.net/article/251767.htm。由于篇幅原因不进行过多展示，可自行参考学习。
-</code></pre>
-<h2 id="1-2-Spi和Jdbc"><a href="#1-2-Spi和Jdbc" class="headerlink" title="1.2 Spi和Jdbc"></a>1.2 Spi和Jdbc</h2><pre><code>在JDBC数据库连接的驱动中同样也使用了Spi机制，当初sun公司为了实现Java连接各大数据库（mongodb、redis、mysql...），便编写了JDBC接口，然后由各大数据库厂家编写实现。&lt;br /&gt;![image](assets/image-20230601001204-irzpjjf.png)
-
-在这个背景下，就有Java程序员使用JDBC连接数据库的六大步骤：
-</code></pre>
-<p><img src="assets/image-20230601211918-fe0fbrx.png" alt="image"></p>
-<pre><code>以Mysql数据库为例，若程序员使用JDBC-Mysql执行一条数据库操作时，常用的如下代码：
-</code></pre>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestJDBC</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ClassNotFoundException, SQLException &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 1.加载驱动</span></span><br><span class="line">        Class.forName(<span class="string">&quot;com.mysql.cj.jdbc.Driver&quot;</span>);</span><br><span class="line">    </span><br><span class="line">        <span class="comment">// 2.获取连接</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(<span class="string">&quot;jdbc:mysql://localhost:3306/testdb&quot;</span>,<span class="string">&quot;root&quot;</span>,<span class="string">&quot;123&quot;</span>);</span><br><span class="line">    </span><br><span class="line">        <span class="comment">// 3.获取SQL执行器</span></span><br><span class="line">        <span class="type">Statement</span> <span class="variable">statement</span> <span class="operator">=</span> connection.createStatement();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 4.5.执行SQL，获取查询结果集</span></span><br><span class="line">        <span class="type">ResultSet</span> <span class="variable">resultSet</span> <span class="operator">=</span> statement.executeQuery(<span class="string">&quot;SELECT * FROM users&quot;</span>);</span><br><span class="line">    </span><br><span class="line">        <span class="comment">// 6.关闭连接</span></span><br><span class="line">        connection.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<pre><code>那么其实第一步加载驱动是可以省略的，当我们注释掉第一步加载驱动，代码依然正常运行，这就是Spi机制在起作用。DriverManager是用于管理Jdbc驱动的基础服务类，位于位于Java.sql包中，因此是由boot类加载器来进行加载。在加载时会调用静态代码块调用loadInitialDrivers方法，如下图所示。
-</code></pre>
-<p><img src="assets/image-20230601221123-4ciexc6.png" alt="image"></p>
-<pre><code>跟进`loadInitialDrivers()`​方法中，586行体现了Spi机制是如何破坏Java的双亲委派模型的（但是这并不是重点），在602行调用`driversIterator.hasNext()`来判断是否有下一个JDBC的驱动程序需要加载和注册，实现流程如下所示。
-</code></pre>
-<ol>
-<li>java.util.Iterator#hasNext：在587行生成迭代器后602行调用其<code>hasNext()</code>​方法，跟进后发现在这个方法中出现了两个变量<code>knownProviders</code>​和<code>lookupIterator</code>​，其中前者是已知服务提供者的迭代器，它存储了在之前的迭代中已经找到的所有服务提供者，包括已经实例化的和还未被实例化的；而后者是服务提供者查找器的迭代器，它用于查找新的服务提供者。所以在 <code>hasNext()</code>​方法中，先判断 <code>knownProviders</code>​ 中是否还有下一个服务提供者，如果有则直接返回 true，否则再通过 <code>lookupIterator</code>​查找新的服务提供者，如果找到则添加到 <code>knownProviders</code>​ 中，最终返回 true。</li>
-<li>java.util.ServiceLoader.LazyIterator#hasNext：<code>acc</code>​是一个 <code>AccessControlContext</code>​ 类型的变量，用于实现 Java 安全模型中的权限控制。Java 安全模型中包含了许多安全策略和权限控制的机制，其中 <code>AccessControlContext</code>​ 用于描述当前线程的访问控制上下文，包括当前线程的访问控制器、权限集等信息。在 <code>hasNext()</code>​ 方法中，如果 <code>acc</code>​ 为空（即没有指定安全策略），则直接调用 <code>hasNextService()</code>​ 方法来判断是否有下一个服务提供者；如果 <code>acc</code>​ 不为空，则使用 <code>AccessController.doPrivileged()</code>​ 方法来执行 <code>hasNextService()</code>​ 方法，以此来保证在访问服务提供者时符合安全策略的要求。</li>
-<li>java.util.ServiceLoader.LazyIterator#hasNextService：如果<code>nextName</code>​（存储下一个服务提供者的名称）不为 null，说明已经找到下一个服务提供者，直接返回 true。如果<code>configs</code>​（存储服务提供者的配置文件的枚举对象）为 null，说明还没有加载服务提供者的配置文件，需要先加载配置文件。加载配置文件的过程中，会根据服务提供者的名称查找对应的配置文件，并将其存储在<code>configs</code>​变量中；而在这里配置文件的名称默认是在<code>META-INF/services</code>​下的，这也就是为什么Spi的配置文件要写在这目录下。如果已经加载了配置文件，但是没有找到下一个服务提供者，则需要遍历已经加载的配置文件，查找下一个服务提供者。具体来说，会先判断 <code>pending</code>​ （用于存储当前服务提供者的所有实现类的名称）变量是否为 null 或者 <code>pending</code>​ 迭代器中是否还有元素。如果 <code>pending</code>​ 不为 null，且<code>pending</code>​迭代器中还有元素，则说明已经找到下一个服务提供者，将其存储在<code>nextName</code>​变量中，并返回 true。否则，需要继续遍历已经加载的配置文件，查找下一个服务提供者。如果已经遍历完所有的配置文件，仍然没有找到下一个服务提供者，则返回 false，表示不存在下一个服务提供者。总的来说，该方法的作用是判断是否存在下一个服务提供者，并将其存储在<code>nextName</code>​变量中，以便在下一次调用 next() 方法时使用。具体实现逻辑比较复杂，需要依次加载配置文件、解析配置文件，并遍历已经解析的配置文件才能找到下一个服务提供者。</li>
-</ol>
-<p>​​​​​<img src="assets/image-20230603121932-xbi63ay.png" alt="image">​​​​​</p>
-<pre><code>其次判断通过后进`driversIterator.next()`​的，由于1-2步和前面一模一样，这里就不过多去阐述，解释一下最后一步即可。
-</code></pre>
-<ol>
-<li>首先代码调用了<code>hasNextService()</code>​查看是否存在下一个服务提供者，由于我们在<code>hasNext()</code>​上面的流程中已经寻找到并且将<code>nextName</code>​赋值，所以可以直接<code>return true；</code>​随后获取下一个服务提供者的类名，并将 <code>nextName</code>​ 置为 <code>null</code>​，以便于下次循环调用<code>hasNext()</code>​时走完整个流程。之后通过反射获取服务提供者类 <code>c</code>​，并将其加载到内存中，并检查该服务提供者是否实现了指定的服务接口 <code>service</code>​，如果不是则抛出异常。调用 <code>newInstance()</code>​ 方法实例化服务提供者 <code>p</code>​，并将其转换为指定的服务类型 <code>S</code>​。将服务提供者实例 <code>p</code>​ 存储到 <code>providers</code>​ 集合中，以备后续使用。而后返回服务提供者实例 <code>p</code>​。总之，这段代码的作用是从配置文件中加载服务提供者并实例化服务。</li>
-</ol>
-<p>​<img src="assets/image-20230603145155-pth0g0m.png" alt="image">​</p>
-<pre><code>那么就可以解释刚刚到问题，为什么第一步加载驱动可以省略还能正常运行，就是因为Java里的数据库驱动使用了Spi机制，会默认的寻找classpath下所有的`META-INF/services`​目录里文件名为`java.sql.Driver`​里文件内容找出来并进行加载，所以就不需要我们手动去加载驱动了。​
-</code></pre>
-<p><img src="assets/image-20230603160412-5nah0vk.png" alt="image">​</p>
-<h1 id="2-攻防JDBC和Spi利用思考"><a href="#2-攻防JDBC和Spi利用思考" class="headerlink" title="2. 攻防JDBC和Spi利用思考"></a>2. 攻防JDBC和Spi利用思考</h1><pre><code>其实对于刚刚的Spi学习，可以大致理解为如下的代码：
-</code></pre>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>mysql<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>mysql-connector-java<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>8.0.26<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.xerial<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>sqlite-jdbc<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.41.2.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- https://mvnrepository.com/artifact/org.postgresql/postgresql --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.postgresql<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>postgresql<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>42.4.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<pre><code>当运行下方代码后即可找到三个不同数据库JDBC的链接驱动，并进行加载
-</code></pre>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        ServiceLoader&lt;Driver&gt; serviceLoader = ServiceLoader.load(Driver.class, ClassLoader.getSystemClassLoader( ));</span><br><span class="line">        <span class="keyword">for</span>(Iterator&lt;Driver&gt; iterator = serviceLoader.iterator(); iterator.hasNext();) &#123;</span><br><span class="line">            <span class="type">Driver</span> <span class="variable">driver</span> <span class="operator">=</span> iterator.next();</span><br><span class="line">            System.out.println(driver.getClass().getPackage() + <span class="string">&quot; ------&gt; &quot;</span> + driver.getClass().getName());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//package com.mysql.cj.jdbc, JDBC, version 4.2 ------&gt; com.mysql.cj.jdbc.Driver</span></span><br><span class="line"><span class="comment">//package org.sqlite ------&gt; org.sqlite.JDBC</span></span><br><span class="line"><span class="comment">//package org.postgresql, JDBC, version 4.2 ------&gt; org.postgresql.Driver</span></span><br></pre></td></tr></table></figure>
-
-<pre><code>那么这个Spi在攻防中可以利用在攻击中或攻击成功后的后门维持中。也就是说对于JDBC来说，我们的角色只需要是“服务提供商”即可。当我们编写实现`java.sql.Driver`​接口并且符合Spi规范的攻击脚本，那么当受害者引用这个jar包，运行时Spi机制会主动的寻找所有`java.sql.Driver`​实现类。并对其进行加载。
-</code></pre>
-<p><img src="assets/image-20230603152413-sdildm6.png" alt="image"></p>
-<pre><code>当我们导入jar包到classpath下后，再次运行上面代码，Spi机制可以帮我们找到4个实现了`java.sql.Driver`​接口的类，并且完成了实例化，触发了我们的攻击代码。如下图所示：
-</code></pre>
-<p>​<img src="assets/image-20230603152722-low73sh.png" alt="image">​</p>
-<pre><code>所以当发起sql请求，获取Sql连接时，会调用`java.sql.DriverManager`​静态代码块，进而调用`loadInitialDrivers`​完成Spi机制寻找所有的数据库驱动并加载，从而达到后门建立的攻击。
-</code></pre>
-<p>​<img src="assets/image-20230603154419-zjhn03k.png" alt="image">​</p>
-<p>‍</p>
-<h1 id="3-后话"><a href="#3-后话" class="headerlink" title="3. 后话"></a>3. 后话</h1><pre><code>如果当我们获取了目标服务器权限后，做以上的事情就会比较轻松（毕竟维持后门），但是在攻击中是否可以利用这个方式进行攻击？我觉得也是可以的。在Springboot中由于默认不解析脚本文件了，使得文件上传的点会比较难以利用。虽然网络上也有很多已知点攻击利用方式，例如ssh，定时任务等，但是这些对于有系统检测到应用系统来说很容易告警，这不得不考虑也可以成为一种攻击思路。
-
-虽然springboot大多都是以maven进行管理第三方组件了，但并不是所有的组件都可以在中央仓库上找到，还有很多个人自己开发的等，此时就会把自己开发的jar包放到某个目录下作为项目的classpath，也就是idea里的lib，那么此时该目录下的所有jar文件都会成为第三方组件库，如下所示。
-</code></pre>
-<p><img src="assets/image-20230603155113-mlcs869.png" alt="image"></p>
-<pre><code>若该项目用了自定义的classpath目录并且被我们知道，那么文件上传的点可以在这里进行利用。
-</code></pre>
-<p>‍</p>
-<p>‍</p>
-<p>‍</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://tttang.com/archive/1819/">https://tttang.com/archive/1819/</a></p>
-<p>‍</p>
+        <p>啊啊啊</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/05/31/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/" data-id="clifqqcuz00003dpc3y7lhdky" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2023/10/09/abc/" data-id="clniy4q560001o5pc89lm6tue" class="article-share-link">Share</a>
       
       
     </footer>
@@ -212,7 +141,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/04/20/Mysql%E6%94%BB%E5%87%BB%E9%9D%A2%E6%80%BB%E7%BB%93/" data-id="cli1z9dc700000hpc8ywd3u34" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2023/04/20/Mysql%E6%94%BB%E5%87%BB%E9%9D%A2%E6%80%BB%E7%BB%93/" data-id="clniy4q540000o5pc2spt2gfq" class="article-share-link">Share</a>
       
       
     </footer>
@@ -261,7 +190,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/04/20/hello-world/" data-id="clgnz8mnp0001k0pcgqhx0v7f" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2023/04/20/hello-world/" data-id="clniy4q570002o5pcggrt05su" class="article-share-link">Share</a>
       
       
     </footer>
@@ -289,7 +218,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/05/">May 2023</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/04/">April 2023</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/10/">October 2023</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/04/">April 2023</a></li></ul>
     </div>
   </div>
 
@@ -302,7 +231,7 @@
       <ul>
         
           <li>
-            <a href="/2023/05/31/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/%E4%BB%8ESPI%E6%9C%BA%E5%88%B6%E5%88%B0JDBC%E5%90%8E%E9%97%A8%E5%AE%9E%E7%8E%B0/">从SPI机制到JDBC后门实现</a>
+            <a href="/2023/10/09/abc/">abc</a>
           </li>
         
           <li>
