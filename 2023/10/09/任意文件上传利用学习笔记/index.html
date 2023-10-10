@@ -14,20 +14,23 @@
   
 
   
-  <title>Archives: 2023/10 | ba3s blog</title>
+  <title>任意文件上传利用学习笔记 | ba3s blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <link rel="preload" href="/css/fonts/Roboto-Regular.ttf" as="font" type="font/ttf" crossorigin="anonymous">
   <link rel="preload" href="/css/fonts/Roboto-Bold.ttf" as="font" type="font/ttf" crossorigin="anonymous">
 
-  <meta name="description" content="人菜瘾又大,啥都想学,啥都不会...">
-<meta property="og:type" content="website">
-<meta property="og:title" content="ba3s blog">
-<meta property="og:url" content="http://example.com/archives/2023/10/index.html">
+  <meta name="description" content="前言由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞">
+<meta property="og:type" content="article">
+<meta property="og:title" content="任意文件上传利用学习笔记">
+<meta property="og:url" content="http://example.com/2023/10/09/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%88%A9%E7%94%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.html">
 <meta property="og:site_name" content="ba3s blog">
-<meta property="og:description" content="人菜瘾又大,啥都想学,啥都不会...">
+<meta property="og:description" content="前言由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-10-09T14:33:20.000Z">
+<meta property="article:modified_time" content="2023-10-09T16:53:38.907Z">
 <meta property="article:author" content="ba3s">
+<meta property="article:tag" content="渗透测试">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="ba3s blog" type="application/atom+xml">
@@ -212,44 +215,87 @@
     <div id="content-body">
        
 
-<div class="archive-main-card">
-    <div class="archive-top">
-      <div class="main-title-bar">
-        <div class="main-title-dot"></div>
-        <h1 class="article-title">Archives</h1>
-      </div>    
+<article id="post-任意文件上传利用学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  
+    
+   
+  <div class="article-inner">
+    <div class="article-main">
+      <header class="article-header">
+        
+<div class="main-title-bar">
+  <div class="main-title-dot"></div>
+  
+    
+      <h1 class="p-name article-title" itemprop="headline name">
+        任意文件上传利用学习笔记
+      </h1>
+    
+  
+</div>
+
+        <div class='meta-info-bar'>
+          <div class="meta-info">
+  <time class="dt-published" datetime="2023-10-09T14:33:20.000Z" itemprop="datePublished">2023-10-09</time>
+</div>
+          <div class="need-seperator meta-info">
+            <div class="meta-cate-flex">
+  
+    Uncategorized 
+   
+</div>
+  
+          </div>
+          <div class="wordcount need-seperator meta-info">
+            93 words 
+          </div>
+        </div>
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/" rel="tag">渗透测试</a></li></ul>
+
+      </header>
+      <div class="e-content article-entry" itemprop="articleBody">
+        
+          <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞</p>
+
+        
+      </div>
+
+         
     </div>
     
-    
-      
-      
-        
-        <div class="year-line">
-            <div class="year-num">2023</div>
-            <div class="dot-wrapper">
-                <div class="dot"></div>
-            </div>
-            <div class="article-count">1 article</div>
-        </div>
-      
-      <a class="archive-article-link" href="/2023/10/09/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%88%A9%E7%94%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" title="任意文件上传利用学习笔记">
-        <div class="date">10-09</div>
-        <div class="line">
-            <div class="dot"></div>
-        </div>
-        <div class="title">
-            <div class="title-inner">
-                
-                    任意文件上传利用学习笔记
-                
-            </div>
-        </div>
-        <div class="tags">
-            #渗透测试
-        </div>
-      </a>
-    
+     
   </div>
+  
+    
+<nav id="article-nav">
+  <a class="article-nav-btn left  disabled "
+     >
+    <i class="fa-solid fa-angle-left"></i>
+    <p class="title-text">
+        
+    </p>
+  </a>
+  <a class="article-nav-btn right "
+    
+      href="/2023/04/20/Mysql%E6%94%BB%E5%87%BB%E9%9D%A2%E6%80%BB%E7%BB%93/"
+      title="first"
+     >
+
+    <p class="title-text">
+      
+        first
+        
+    </p>
+    <i class="fa-solid fa-angle-right"></i>
+  </a>
+</nav>
+
+
+  
+</article>
+
+ 
     </div>
     <div id="footer-wrapper">
       <footer id="footer">
