@@ -20,18 +20,20 @@
   <link rel="preload" href="/css/fonts/Roboto-Regular.ttf" as="font" type="font/ttf" crossorigin="anonymous">
   <link rel="preload" href="/css/fonts/Roboto-Bold.ttf" as="font" type="font/ttf" crossorigin="anonymous">
 
-  <meta name="description" content="前言由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞">
+  <meta name="description" content="前言由于目前国内Php的站点越来越少，java又被springboot所统治，传统的webshell如jsp、php等脚本语言上传到服务器上利用难度越来越大。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞… Spring Boot总所周知，国内的网站已经被Spring Boot所统治，而Spring Boot默认不解析JavaServer Pages文件，Spring Bo">
 <meta property="og:type" content="article">
 <meta property="og:title" content="任意文件上传利用学习笔记">
 <meta property="og:url" content="http://example.com/2023/10/09/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%88%A9%E7%94%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.html">
 <meta property="og:site_name" content="ba3s blog">
-<meta property="og:description" content="前言由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞">
+<meta property="og:description" content="前言由于目前国内Php的站点越来越少，java又被springboot所统治，传统的webshell如jsp、php等脚本语言上传到服务器上利用难度越来越大。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞… Spring Boot总所周知，国内的网站已经被Spring Boot所统治，而Spring Boot默认不解析JavaServer Pages文件，Spring Bo">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2023/10/09/static/Pasted%20image%2020231012104116.png">
 <meta property="article:published_time" content="2023-10-09T14:33:20.000Z">
-<meta property="article:modified_time" content="2023-10-09T16:53:38.907Z">
+<meta property="article:modified_time" content="2023-10-12T11:47:40.851Z">
 <meta property="article:author" content="ba3s">
 <meta property="article:tag" content="渗透测试">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/10/09/static/Pasted%20image%2020231012104116.png">
   
     <link rel="alternate" href="/atom.xml" title="ba3s blog" type="application/atom+xml">
   
@@ -247,7 +249,7 @@
   
           </div>
           <div class="wordcount need-seperator meta-info">
-            93 words 
+            2.1k words 
           </div>
         </div>
         
@@ -256,7 +258,26 @@
       </header>
       <div class="e-content article-entry" itemprop="articleBody">
         
-          <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞</p>
+          <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>由于目前国内Php的站点越来越少，java又被springboot所统治，传统的webshell如jsp、php等脚本语言上传到服务器上利用难度越来越大。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞…</p>
+<h1 id="Spring-Boot"><a href="#Spring-Boot" class="headerlink" title="Spring Boot"></a>Spring Boot</h1><p>总所周知，国内的网站已经被Spring Boot所统治，而Spring Boot默认不解析JavaServer Pages文件，Spring Boot 倾向于使用Thymeleaf、Freemarker、Mustache等模板引擎来生成视图。这导致在对于任意文件上传漏洞场景时无法上传webshell，利用起来难免有些束手无策。</p>
+<p>已经有大佬探索出spring下写文件的利用方式：<a target="_blank" rel="noopener" href="https://landgrey.me/blog/22/">https://landgrey.me/blog/22/</a></p>
+<p>作者利用Java的类加载机制，在类进行初始化时会执行static 代码块、static 属性引用的方法等情况下，上传/写入一个恶意的类让程序去初始化它，即可调用该类具有攻击的static代码块等，那么就可以让任意文件写入漏洞变为代码执行漏洞。</p>
+<p>但由于现在生产环境部署 <code>spring boot</code> 项目一般都是将其打包成一个 <code>FatJar</code>，把所有资源打包进一个 jar 文件内，无法在其运行的时候往<code>classpath</code>中增加文件。这就导致即使成功上传写入的恶意类，但不在此目录下无法被app(应用程序)识别并加载后初始化，自然做不到像刚才所想的利用Java的类加载机制实现攻击。</p>
+<blockquote>
+<p>classpath = BOOT-INF/classes + BOOT-INF/lib</p>
+</blockquote>
+<p>既然无法写入app(应用程序)的classpath，选择更为底层的java的classpath，即 JDK HOME 目录下。最终发现可利用的文件<code>/jre/lib/charsets.jar</code>，若app(应用程序)中没有使用<code>Charset.forName(&quot;GBK&quot;)</code> 类似的代码，默认就不会加载这个文件。<br>而在Spring-Web组件中<code>org.springframework.web.accept.HeaderContentNegotiationStrategy</code>类对于每一次Web请求都会尝试解析数据包发的 <code>Accept</code> 头的值，设置相应的字符集编码。在其代码逻辑解析时底层会调用<code>Charset.forName(value)</code>用来主动加载字符集的代码。</p>
+<p>那么也就意味着我们只需要上传恶意的charsets.jar替换掉Java底层的classpath里的charsets.jar文件，在每次请求到Spring Boot时将Accept设置一下charset的值，如下所示。那么<code>HeaderContentNegotiationStrategy</code>将会解析Accept并主动调用<code>Charset.forName(value)</code>实例化写入替换掉恶意的charsets.jar即可触发RCE</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET / HTTP/1.1 </span><br><span class="line">Accept: text/html;charset=GBK</span><br></pre></td></tr></table></figure>
+
+<p>但是其实这里是需要一个先决条件：Java的classpath在目标系统的哪个路径下？只能猜…网上有很多收集到的常见JDK lib目录，可以自行尝试。</p>
+<h1 id="计划任务"><a href="#计划任务" class="headerlink" title="计划任务"></a>计划任务</h1><p>如果app(应用程序)无法利用(例如无法找到对应的Java Lib目录)，同样我们也可以深入到底层例如系统层面去寻找突破口，而各个操作系统自带的计划任务就给我们提供了一个很好的利用思路。但是在先前学习redis写计划任务rce利用时发现ubuntu写计划任务条件是比较复杂的，存在不同系统里的环境限制。<br><img src="../static/Pasted%20image%2020231012104116.png"></p>
+<p>若下面这里是ubuntu的/var/spool/cron/crontabs/root文件下的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># do daily/weekly/monthly maintenance</span><br><span class="line"># min   hour    day     month   weekday command</span><br><span class="line">*/15    *       *       *       *       run-parts /etc/periodic/15min</span><br><span class="line">0       *       *       *       *       run-parts /etc/periodic/hourly</span><br><span class="line">0       2       *       *       *       run-parts /etc/periodic/daily</span><br><span class="line">0       3       *       *       6       run-parts /etc/periodic/weekly</span><br><span class="line">0       5       1       *       *       run-parts /etc/periodic/monthly</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="bash调用"><a href="#bash调用" class="headerlink" title="bash调用"></a>bash调用</h1><p><code>/etc/profile</code>是一个系统级别的配置文件，存在于许多Unix和Unix-like操作系统中，包括Linux。当您在Bash终端中打开一个新的交互式会话时，Bash会按照特定的顺序加载一系列配置文件，其中之一就是<code>/etc/profile</code>。</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p>JDK8任意文件写到RCE: <a target="_blank" rel="noopener" href="https://forum.butian.net/share/1623">https://forum.butian.net/share/1623</a><br>任意文件上传的曲折到等待上线: <a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/12310">https://xz.aliyun.com/t/12310</a><br>Spring Boot Fat Jar 写文件漏洞到稳定 RCE 的探索: <a target="_blank" rel="noopener" href="https://landgrey.me/blog/22/">https://landgrey.me/blog/22/</a><br>记一次被burpsuite坑死的任意文件上传: <a target="_blank" rel="noopener" href="https://cn-sec.com/archives/1762065.html">https://cn-sec.com/archives/1762065.html</a><br>数据库利用: <a target="_blank" rel="noopener" href="http://wiki.xianxianlabs.com/project-24/doc-1912/">http://wiki.xianxianlabs.com/project-24/doc-1912/</a></p>
 
         
       </div>

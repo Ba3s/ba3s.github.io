@@ -243,7 +243,7 @@
   
           </div>
           <div class="wordcount need-seperator meta-info">
-            93 words 
+            2.1k words 
           </div>
         </div>
         
@@ -253,8 +253,11 @@
       <div class="e-content article-entry" itemprop="articleBody">
         
           <div class="truncate-text">
-            前言由于目前国内Php的站点越来越少，java又被spring所统治，上传脚本语言木马到服务器上越来越难且越来越少。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞
-  
+            前言由于目前国内Php的站点越来越少，java又被springboot所统治，传统的webshell如jsp、php等脚本语言上传到服务器上利用难度越来越大。安全研究员不得不开辟出新的任意文件上传的利用方式以达到进一步利用该漏洞…
+Spring Boot总所周知，国内的网站已经被Spring Boot所统治，而Spring Boot默认不解析JavaServer Pages文件，Spring Boot 倾向于使用Thymeleaf、Freemarker、Mustache等模板引擎来生成视图。这导致在对于任意文件上传漏洞场景时无法上传webshell，利用起来难免有些束手无策。
+已经有大佬探索出spring下写文件的利用方式：https://landgrey.me/blog/22/
+作者利用Java的类加载机制，在类进行初始化时会执行static 代码块、static 属性引用的方法等情况下，上传/写入一个恶意的类让程序去初始化它，即可调用该类具有攻击的static代码块等，那么就可以让任意文件写入漏洞变为代码执行漏洞。
+但由于现在生产环境部署 spring boot 项目一般都是...  
           </div>
         
       </div>
